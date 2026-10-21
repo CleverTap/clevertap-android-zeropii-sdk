@@ -85,3 +85,14 @@
 # keeping the SDK's interface provides defense-in-depth against edge cases
 # (e.g., consumer using a different Retrofit version with different rules).
 -keep interface com.clevertap.android.zeropii.sdk.api.TokenizationApi { *; }
+
+# ————————————————————————————————————————————————————————————————————————————
+# 8. CLEVERTAP CORE SDK VERSION REGISTRATION
+# ————————————————————————————————————————————————————————————————————————————
+# CoreSdkVersionRegistrar finds CleverTap Core through reflection to report the
+# ZeroPii version, so the class name and these two members must survive R8.
+# Matches nothing when the app does not include Core.
+-keep class com.clevertap.android.sdk.CleverTapAPI {
+    public static java.util.HashMap getInstances();
+    public void setCustomSdkVersion(java.lang.String, int);
+}

@@ -11,6 +11,7 @@ import com.clevertap.android.zeropii.sdk.repository.TokenRepositoryImpl
 import com.clevertap.android.zeropii.sdk.repository.TokenRepository
 import com.clevertap.android.zeropii.sdk.retry.DefaultRetryPolicy
 import com.clevertap.android.zeropii.sdk.retry.RetryPolicy
+import com.clevertap.android.zeropii.sdk.util.CoreSdkVersionRegistrar
 import com.clevertap.android.zeropii.sdk.util.TypeConverterRegistry
 import com.clevertap.android.zeropii.sdk.util.ZeroPiiLogger
 import com.clevertap.android.zeropii.sdk.util.toPublicResult
@@ -36,6 +37,7 @@ class ZeroPiiSDK private constructor(
     internal lateinit var authRepository: AuthRepository
     private lateinit var encryptionManager: EncryptionManager
     private lateinit var logger: ZeroPiiLogger
+    internal lateinit var coreSdkVersionRegistrar: CoreSdkVersionRegistrar
 
     init {
         initialize()
@@ -58,6 +60,8 @@ class ZeroPiiSDK private constructor(
         authRepository = AccessTokenProviderAuthRepository(tokenProvider, logger)
 
         tokenRepository = TokenRepositoryImpl(networkProvider, authRepository, encryptionManager, logger, retryPolicy)
+        coreSdkVersionRegistrar = CoreSdkVersionRegistrar(logger)
+
         logger.d("ZeroPiiSDK initialization complete")
     }
 
@@ -297,7 +301,7 @@ class ZeroPiiSDK private constructor(
             logLevel: ZeroPiiLogger.LogLevel = ZeroPiiLogger.LogLevel.OFF,
             retryPolicy: RetryPolicy = DefaultRetryPolicy()
         ): ZeroPiiSDK {
-            return INSTANCE ?: synchronized(this) {
+            val sdk = INSTANCE ?: synchronized(this) {
                 INSTANCE ?: ZeroPiiSDK(
                     tokenProvider,
                     apiUrl,
@@ -306,6 +310,9 @@ class ZeroPiiSDK private constructor(
                     retryPolicy = retryPolicy
                 ).also { INSTANCE = it }
             }
+            // Runs on every initialize call, so a later call registers CleverTap instances created since
+            sdk.coreSdkVersionRegistrar.registerWithAllInstances()
+            return sdk
         }
 
         /**
